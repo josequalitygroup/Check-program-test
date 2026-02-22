@@ -66,3 +66,29 @@ python app.py
 
 - Input files are not overwritten unless you explicitly save to the same path.
 - This tool expects valid CSV files. Friendly errors are shown for missing files, bad CSVs, or missing mappings.
+
+
+## Build a Windows Executable (.exe)
+
+You can package the app as a Windows executable using **PyInstaller**.
+
+### Option A (recommended): batch script
+
+```bat
+build_windows_exe.bat
+```
+
+### Option B: manual command
+
+```bat
+python -m pip install -r requirements.txt
+python -m pip install pyinstaller
+pyinstaller --clean --noconfirm quickbooks_merger.spec
+```
+
+After build, use:
+
+- `dist\QuickBooksCheckVendorUpdater\QuickBooksCheckVendorUpdater.exe`
+
+> Note: if you add `assets/splash_bg.jpg`, it will be bundled automatically.
+
