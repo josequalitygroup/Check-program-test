@@ -12,6 +12,7 @@ It updates vendor/payee names in a QuickBooks upload file by matching check numb
 - Friendly step-by-step GUI with status label, reset button, and clear action flow
 - Startup splash screen (2 seconds) with branded title: **Jose's CSV Check Merger**
 - Login screen appears after splash (User: `Kiri`, Password: `Jcr16331878`)
+- English/Spanish language switch on login and main screen
 - Modernized visual styling with rounded panels, improved spacing, and polished controls
 - Flexible column mapping via dropdowns
 - Automatic best-effort detection of common column names
