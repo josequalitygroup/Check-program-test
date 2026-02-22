@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QFileDialog,
+    QDialog,
     QFormLayout,
     QGridLayout,
     QGroupBox,
@@ -125,6 +126,65 @@ class SplashScreen(QWidget):
         painter.setPen(QPen(QColor("#dce6f4")))
         painter.setFont(QFont("Segoe UI", 15))
         painter.drawText(self.rect().adjusted(40, 170, -40, -20), Qt.AlignHCenter, "QuickBooks Vendor Name Updater")
+
+
+class LoginDialog(QDialog):
+    def __init__(self) -> None:
+        super().__init__()
+        self.setWindowTitle("Login")
+        self.setModal(True)
+        self.setFixedSize(380, 220)
+
+        layout = QVBoxLayout(self)
+
+        title = QLabel("Sign in")
+        title.setStyleSheet("font-size: 20px; font-weight: 700; color: #f2c14e;")
+
+        form = QFormLayout()
+        self.user_input = QLineEdit()
+        self.password_input = QLineEdit()
+        self.password_input.setEchoMode(QLineEdit.Password)
+
+        form.addRow("User:", self.user_input)
+        form.addRow("Password:", self.password_input)
+
+        login_btn = QPushButton("Login")
+        login_btn.clicked.connect(self.try_login)
+
+        self.message_label = QLabel("")
+        self.message_label.setStyleSheet("color: #ffb3b3;")
+
+        layout.addWidget(title)
+        layout.addLayout(form)
+        layout.addWidget(self.message_label)
+        layout.addWidget(login_btn)
+
+        self.setStyleSheet(
+            "QDialog { background: #111111; color: #f5f5f5; }"
+            "QLineEdit { background: #0f0f10; color: #f5f5f5; border: 1px solid #c29b2d; border-radius: 6px; padding: 6px; }"
+            "QPushButton { background: #1c1c1d; color: #fff8e6; border: 1px solid #d4af37; border-radius: 6px; min-height: 30px; font-weight: 600; }"
+            "QPushButton:hover { background: #2a2a2c; }"
+        )
+
+    def try_login(self) -> None:
+        if self.user_input.text().strip() == "Kiri" and self.password_input.text() == "Jcr16331878":
+            self.accept()
+            return
+
+        self.message_label.setText("Invalid username or password.")
+
+        self.quickbooks_path.clear()
+        self.reference_path.clear()
+        self.qb_check_combo.clear()
+        self.qb_vendor_combo.clear()
+        self.ref_check_combo.clear()
+        self.ref_vendor_combo.clear()
+        self.preview_table.clear()
+        self.preview_table.setRowCount(0)
+        self.preview_table.setColumnCount(0)
+        self.summary_box.clear()
+        self.save_btn.setEnabled(False)
+        self._set_status("Ready")
 
 
 class CheckVendorUpdater(QMainWindow):
@@ -616,7 +676,12 @@ def main() -> None:
 
     def show_main_window() -> None:
         splash.close()
-        window.show()
+        login = LoginDialog()
+        if login.exec() == QDialog.Accepted:
+            window.show()
+            return
+
+        app.quit()
 
     splash.show()
     QTimer.singleShot(2000, show_main_window)

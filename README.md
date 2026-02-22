@@ -11,6 +11,7 @@ It updates vendor/payee names in a QuickBooks upload file by matching check numb
   - **Check Reference file** (lookup file with check number + vendor name)
 - Friendly step-by-step GUI with status label, reset button, and clear action flow
 - Startup splash screen (2 seconds) with branded title: **Jose's CSV Check Merger**
+- Login screen appears after splash (User: `Kiri`, Password: `Jcr16331878`)
 - Modernized visual styling with rounded panels, improved spacing, and polished controls
 - Flexible column mapping via dropdowns
 - Automatic best-effort detection of common column names
@@ -51,14 +52,15 @@ python app.py
 
 ## Typical Workflow
 
-1. Select QuickBooks Upload file (CSV/Excel).
-2. Select Check Reference file (CSV/Excel).
-3. Confirm/adjust column mappings.
-4. Keep **Extract check number from text** enabled if your bank exports values like `Check 101`.
-5. Click **Update Vendor Names**.
-6. Review summary and preview.
-7. (Optional) Keep **Create backup of original QuickBooks file** enabled.
-8. Click **Save Updated CSV** (or choose Excel `.xlsx`).
+1. Open app and sign in (User: `Kiri`, Password: `Jcr16331878`).
+2. Select QuickBooks Upload file (CSV/Excel).
+3. Select Check Reference file (CSV/Excel).
+4. Confirm/adjust column mappings.
+5. Keep **Extract check number from text** enabled if your bank exports values like `Check 101`.
+6. Click **Update Vendor Names**.
+7. Review summary and preview.
+8. (Optional) Keep **Create backup of original QuickBooks file** enabled.
+9. Click **Save Updated CSV** (or choose Excel `.xlsx`).
 
 ## Notes
 
