@@ -1,6 +1,6 @@
 # QuickBooks Check Vendor Updater (Windows Desktop App)
 
-A simple Windows desktop app built with **Python + PySide6 + pandas**.
+A simple Windows desktop app built with **Python + PySide6 + pandas** with a clean step-by-step interface.
 
 It updates vendor/payee names in a QuickBooks upload CSV by matching check numbers from a second reference CSV.
 
@@ -9,12 +9,14 @@ It updates vendor/payee names in a QuickBooks upload CSV by matching check numbe
 - Upload two CSV files:
   - **QuickBooks Upload CSV** (target file to update)
   - **Check Reference CSV** (lookup file with check number + vendor name)
+- Friendly step-by-step GUI with status label, reset button, and clear action flow
 - Flexible column mapping via dropdowns
 - Automatic best-effort detection of common column names
 - Matching by check number with normalization options:
   - trim spaces
   - convert to string
   - remove trailing `.0`
+  - optionally extract check number from text like `Check 101` / `Cheque #101`
 - Replaces vendor/payee only for matched check numbers
 - Leaves unmatched rows unchanged
 - Duplicate handling in reference CSV:
@@ -23,6 +25,7 @@ It updates vendor/payee names in a QuickBooks upload CSV by matching check numbe
 - Preview first 100 rows before saving
 - Save updated CSV as a new file (default `QuickBooks_Upload_Updated.csv`)
 - Optional unmatched report export (`*_Unmatched.csv`)
+- Optional backup of the original QuickBooks CSV on save (`*_Backup.csv`)
 - Summary metrics:
   - total rows
   - matched rows
@@ -49,9 +52,11 @@ python app.py
 1. Select QuickBooks Upload CSV.
 2. Select Check Reference CSV.
 3. Confirm/adjust column mappings.
-4. Click **Update Vendor Names**.
-5. Review summary and preview.
-6. Click **Save Updated CSV**.
+4. Keep **Extract check number from text** enabled if your bank exports values like `Check 101`.
+5. Click **Update Vendor Names**.
+6. Review summary and preview.
+7. (Optional) Keep **Create backup of original QuickBooks CSV** enabled.
+8. Click **Save Updated CSV**.
 
 ## Notes
 
