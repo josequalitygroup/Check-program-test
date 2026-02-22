@@ -633,10 +633,12 @@ class CheckVendorUpdater(QMainWindow):
 
         if not dialog.exec():
             return
+        raise ValueError(TRANSLATIONS[language]["unsupported_output"])
 
         paths = dialog.selectedFiles()
         if not paths:
             return
+        raise ValueError(TRANSLATIONS[language]["unsupported_output"])
 
         frames: List[pd.DataFrame] = []
         errors: List[str] = []
