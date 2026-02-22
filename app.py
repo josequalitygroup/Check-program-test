@@ -63,11 +63,11 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "subtitle": "Load both files, confirm column mapping, then update vendor/payee names by check number.",
         "step1": "Step 1 — Select Files",
         "qb_placeholder": "Choose the QuickBooks Upload file (CSV/Excel)...",
-        "ref_placeholder": "Choose the Check Reference file (CSV/Excel)...",
+        "ref_placeholder": "Choose one or more Check Reference files (CSV/Excel)...",
         "qb_browse": "Browse QuickBooks File",
-        "ref_browse": "Browse Reference File",
+        "ref_browse": "Browse Reference File(s)",
         "qb_target": "QuickBooks Upload file (target):",
-        "ref_lookup": "Check Reference file (lookup):",
+        "ref_lookup": "Check Reference file(s) (lookup):",
         "step2": "Step 2 — Confirm Column Mapping",
         "map_qb_check": "QuickBooks Check Number column:",
         "map_qb_vendor": "QuickBooks Vendor/Payee to update:",
@@ -92,11 +92,11 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "files_saved": "Files saved",
         "update_complete": "Update complete",
         "loaded_qb": "Loaded QuickBooks file.",
-        "loaded_ref": "Loaded reference file.",
+        "loaded_ref": "Loaded reference file(s): {count}.",
         "qb_loaded_status": "QuickBooks file loaded",
         "ref_loaded_status": "Reference file loaded",
         "select_qb": "Select QuickBooks Upload File",
-        "select_ref": "Select Check Reference File",
+        "select_ref": "Select Check Reference File(s)",
         "read_qb_err": "Could not read QuickBooks file: {error}",
         "read_ref_err": "Could not read reference file: {error}",
         "missing_files": "Please load both files first.",
@@ -137,11 +137,11 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "subtitle": "Cargue ambos archivos, confirme el mapeo de columnas y actualice proveedor/beneficiario por número de cheque.",
         "step1": "Paso 1 — Seleccionar archivos",
         "qb_placeholder": "Elija el archivo de QuickBooks (CSV/Excel)...",
-        "ref_placeholder": "Elija el archivo de referencia de cheques (CSV/Excel)...",
+        "ref_placeholder": "Elija uno o más archivos de referencia de cheques (CSV/Excel)...",
         "qb_browse": "Buscar archivo QuickBooks",
-        "ref_browse": "Buscar archivo de referencia",
+        "ref_browse": "Buscar archivo(s) de referencia",
         "qb_target": "Archivo QuickBooks (objetivo):",
-        "ref_lookup": "Archivo de referencia (búsqueda):",
+        "ref_lookup": "Archivo(s) de referencia (búsqueda):",
         "step2": "Paso 2 — Confirmar mapeo de columnas",
         "map_qb_check": "Columna de número de cheque en QuickBooks:",
         "map_qb_vendor": "Columna de proveedor/beneficiario a actualizar:",
@@ -166,11 +166,11 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "files_saved": "Archivos guardados",
         "update_complete": "Actualización completada",
         "loaded_qb": "Archivo QuickBooks cargado.",
-        "loaded_ref": "Archivo de referencia cargado.",
+        "loaded_ref": "Archivo(s) de referencia cargado(s): {count}.",
         "qb_loaded_status": "Archivo QuickBooks cargado",
         "ref_loaded_status": "Archivo de referencia cargado",
         "select_qb": "Seleccionar archivo de QuickBooks",
-        "select_ref": "Seleccionar archivo de referencia",
+        "select_ref": "Seleccionar archivo(s) de referencia",
         "read_qb_err": "No se pudo leer el archivo de QuickBooks: {error}",
         "read_ref_err": "No se pudo leer el archivo de referencia: {error}",
         "missing_files": "Por favor cargue ambos archivos primero.",
@@ -349,6 +349,7 @@ class CheckVendorUpdater(QMainWindow):
 
         self.quickbooks_df: Optional[pd.DataFrame] = None
         self.reference_df: Optional[pd.DataFrame] = None
+        self.reference_files: List[str] = []
         self.updated_df: Optional[pd.DataFrame] = None
         self.unmatched_df: Optional[pd.DataFrame] = None
         self.duplicates: Dict[str, int] = {}
@@ -572,6 +573,7 @@ class CheckVendorUpdater(QMainWindow):
     def reset_app(self) -> None:
         self.quickbooks_df = None
         self.reference_df = None
+        self.reference_files = []
         self.updated_df = None
         self.unmatched_df = None
         self.duplicates = {}
@@ -624,18 +626,38 @@ class CheckVendorUpdater(QMainWindow):
             self._error(self.tr("read_qb_err", error=exc))
 
     def load_reference_csv(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, self.tr("select_ref"), "", "Data Files (*.csv *.xlsx);;CSV Files (*.csv);;Excel Files (*.xlsx)")
-        if not path:
+        paths, _ = QFileDialog.getOpenFileNames(
+            self,
+            self.tr("select_ref"),
+            "",
+            "Data Files (*.csv *.xlsx);;CSV Files (*.csv);;Excel Files (*.xlsx)",
+        )
+        if not paths:
             return
-        try:
-            self.reference_df = self._read_table(path, self.language)
-            self.reference_path.setText(path)
-            self._populate_combo(self.ref_check_combo, list(self.reference_df.columns), CHECK_COLUMN_CANDIDATES)
-            self._populate_combo(self.ref_vendor_combo, list(self.reference_df.columns), VENDOR_COLUMN_CANDIDATES)
-            self._update_summary(self.tr("loaded_ref"))
-            self._set_status(self.tr("ref_loaded_status"))
-        except Exception as exc:
-            self._error(self.tr("read_ref_err", error=exc))
+        raise ValueError(TRANSLATIONS[language]["unsupported_output"])
+
+        frames: List[pd.DataFrame] = []
+        errors: List[str] = []
+        for path in paths:
+            try:
+                frames.append(self._read_table(path, self.language))
+            except Exception as exc:
+                errors.append(f"{Path(path).name}: {exc}")
+
+        if not frames:
+            self._error(self.tr("read_ref_err", error="; ".join(errors)))
+            return
+
+        self.reference_df = pd.concat(frames, ignore_index=True, sort=False)
+        self.reference_files = list(paths)
+        self.reference_path.setText("; ".join(self.reference_files))
+        self._populate_combo(self.ref_check_combo, list(self.reference_df.columns), CHECK_COLUMN_CANDIDATES)
+        self._populate_combo(self.ref_vendor_combo, list(self.reference_df.columns), VENDOR_COLUMN_CANDIDATES)
+        self._update_summary(self.tr("loaded_ref", count=len(self.reference_files)))
+        self._set_status(self.tr("ref_loaded_status"))
+
+        if errors:
+            self._update_summary(self.tr("error_title") + ": " + "; ".join(errors))
 
     def _populate_combo(self, combo: QComboBox, columns: List[str], candidates: List[str]) -> None:
         combo.clear()
