@@ -1,70 +1,61 @@
-# Check Extractor Desktop App (Windows MVP)
+# QuickBooks Check Vendor Updater (Windows Desktop App)
 
-A Windows desktop app (Tkinter + Python) to:
-- Upload scanned check files (`.pdf`, `.jpg`, `.jpeg`, `.png`)
-- Extract **Check Number** and **Vendor/Payee Name** using OpenAI vision
-- Capture **Confidence** and **Notes** when extraction is uncertain
-- Review/edit extracted rows in a table
-- Filter by **Month** + **Year**
-- Export filtered rows to **Excel (.xlsx)**
+A simple Windows desktop app built with **Python + PySide6 + pandas**.
 
-## 1) Prerequisites
-- Windows 10/11
-- Python 3.10+
-- OpenAI API key in environment variable
+It updates vendor/payee names in a QuickBooks upload CSV by matching check numbers from a second reference CSV.
 
-## 2) Install
+## Features
+
+- Upload two CSV files:
+  - **QuickBooks Upload CSV** (target file to update)
+  - **Check Reference CSV** (lookup file with check number + vendor name)
+- Flexible column mapping via dropdowns
+- Automatic best-effort detection of common column names
+- Matching by check number with normalization options:
+  - trim spaces
+  - convert to string
+  - remove trailing `.0`
+  - optionally extract check number from text like `Check 101` / `Cheque #101`
+- Replaces vendor/payee only for matched check numbers
+- Leaves unmatched rows unchanged
+- Duplicate handling in reference CSV:
+  - warns user
+  - uses first match by default
+- Preview first 100 rows before saving
+- Save updated CSV as a new file (default `QuickBooks_Upload_Updated.csv`)
+- Optional unmatched report export (`*_Unmatched.csv`)
+- Summary metrics:
+  - total rows
+  - matched rows
+  - unmatched rows
+  - vendor names replaced
+
+## Setup
+
 ```bash
 python -m venv .venv
+# Windows
 .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## 3) Set OpenAI API key (required)
-PowerShell:
-```powershell
-setx OPENAI_API_KEY "your_api_key_here"
-```
-Reopen terminal so the variable is loaded.
+## Run
 
-## 4) Run
 ```bash
 python app.py
 ```
 
-## 5) Usage
-1. Choose **Month** and **Year**.
-2. Click **Upload Files** and select PDF/image files.
-3. Wait for processing progress to finish.
-4. Double-click table cells to edit values manually.
-5. Click **Export Filtered to Excel**.
+## Typical Workflow
 
-## 6) Data extraction behavior
-- Multi-page PDFs are fully processed.
-- A page can return zero, one, or multiple checks.
-- If extraction fails for a file/page, the app still creates a row with an error note.
-
-## 7) Export format
-Exported filename pattern:
-- `Checks_YYYY_MM.xlsx`
-
-Exported columns:
-- Check Number
-- Vendor Name
-- Month
-- Year
-- Source File
-- Confidence
-- Notes
-
-## 8) Build Windows executable (optional)
-```bash
-pip install pyinstaller
-pyinstaller --noconfirm --onefile --windowed --name CheckExtractor app.py
-```
-Output:
-- `dist\CheckExtractor.exe`
+1. Select QuickBooks Upload CSV.
+2. Select Check Reference CSV.
+3. Confirm/adjust column mappings.
+4. Keep **Extract check number from text** enabled if your bank exports values like `Check 101`.
+5. Click **Update Vendor Names**.
+6. Review summary and preview.
+7. Click **Save Updated CSV**.
 
 ## Notes
-- Never hardcode API keys in source code.
-- OCR quality depends on image/PDF scan quality.
+
+- Input files are not overwritten unless you explicitly save to the same path.
+- This tool expects valid CSV files. Friendly errors are shown for missing files, bad CSVs, or missing mappings.
