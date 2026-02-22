@@ -448,6 +448,56 @@ class CheckVendorUpdater(QMainWindow):
         if self.updated_df is None:
             self._error("No updated data to save. Run the update first.")
             return
+        try:
+            self.reference_df = pd.read_csv(path, dtype=object)
+            self.reference_path.setText(path)
+            self._populate_combo(self.ref_check_combo, list(self.reference_df.columns), CHECK_COLUMN_CANDIDATES)
+            self._populate_combo(self.ref_vendor_combo, list(self.reference_df.columns), VENDOR_COLUMN_CANDIDATES)
+            self._update_summary("Loaded reference file.")
+            self._set_status("Reference file loaded")
+        except Exception as exc:
+            self._error(f"Could not read reference CSV: {exc}")
+
+    def _populate_combo(self, combo: QComboBox, columns: List[str], candidates: List[str]) -> None:
+        combo.clear()
+        combo.addItems(columns)
+        lower = {c.lower().strip(): c for c in columns}
+        for candidate in candidates:
+            for key, original in lower.items():
+                if candidate in key:
+                    combo.setCurrentText(original)
+                    return
+
+    def _required_mapping(self) -> Tuple[str, str, str, str]:
+        if self.quickbooks_df is None or self.reference_df is None:
+            raise ValueError("Please load both CSV files first.")
+
+        qb_check = self.qb_check_combo.currentText().strip()
+        qb_vendor = self.qb_vendor_combo.currentText().strip()
+        ref_check = self.ref_check_combo.currentText().strip()
+        ref_vendor = self.ref_vendor_combo.currentText().strip()
+
+        if not all([qb_check, qb_vendor, ref_check, ref_vendor]):
+            raise ValueError("Please map all required columns before processing.")
+
+        return qb_check, qb_vendor, ref_check, ref_vendor
+
+    def process_updates(self) -> None:
+        try:
+            self._set_status("Processing...")
+            qb_check, qb_vendor, ref_check, ref_vendor = self._required_mapping()
+
+            normalize_mode = self.normalize_checkbox.isChecked()
+            extract_from_text_mode = self.extract_checkbox.isChecked()
+            qb_df = self.quickbooks_df.copy() if self.quickbooks_df is not None else None
+            ref_df = self.reference_df.copy() if self.reference_df is not None else None
+            if qb_df is None or ref_df is None:
+                raise ValueError("Missing files.")
+
+            ref_df["_check_key"] = ref_df[ref_check].apply(
+                lambda v: normalize_check_number(v, normalize_mode, extract_from_text_mode)
+            )
+            ref_df["_vendor_value"] = ref_df[ref_vendor].fillna("").astype(str).str.strip()
 
         default_dir = str(Path(self.quickbooks_path.text()).parent) if self.quickbooks_path.text() else ""
         default_name = str(Path(default_dir) / "QuickBooks_Upload_Updated.csv")
