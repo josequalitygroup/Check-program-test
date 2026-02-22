@@ -626,12 +626,16 @@ class CheckVendorUpdater(QMainWindow):
             self._error(self.tr("read_qb_err", error=exc))
 
     def load_reference_csv(self) -> None:
-        paths, _ = QFileDialog.getOpenFileNames(
-            self,
-            self.tr("select_ref"),
-            "",
-            "Data Files (*.csv *.xlsx);;CSV Files (*.csv);;Excel Files (*.xlsx)",
-        )
+        dialog = QFileDialog(self, self.tr("select_ref"))
+        dialog.setFileMode(QFileDialog.ExistingFiles)
+        dialog.setNameFilter("Data Files (*.csv *.xlsx);;CSV Files (*.csv);;Excel Files (*.xlsx)")
+        dialog.setOption(QFileDialog.DontUseNativeDialog, True)
+
+        if not dialog.exec():
+            return
+        raise ValueError(TRANSLATIONS[language]["unsupported_output"])
+
+        paths = dialog.selectedFiles()
         if not paths:
             return
         raise ValueError(TRANSLATIONS[language]["unsupported_output"])
