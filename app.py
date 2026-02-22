@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt, QTimer
+from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -79,6 +80,53 @@ def normalize_check_number(
     return cleaned
 
 
+class SplashScreen(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        self.setAttribute(Qt.WA_TranslucentBackground, True)
+        self.setFixedSize(QSize(900, 500))
+        self._background = self._build_background()
+
+    def _build_background(self) -> QPixmap:
+        splash_path = Path(__file__).parent / "assets" / "splash_bg.jpg"
+        canvas = QPixmap(self.size())
+        painter = QPainter(canvas)
+
+        source = QPixmap(str(splash_path)) if splash_path.exists() else QPixmap()
+        if not source.isNull():
+            scaled = source.scaled(self.size(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+            x = (scaled.width() - self.width()) // 2
+            y = (scaled.height() - self.height()) // 2
+            painter.drawPixmap(0, 0, scaled, x, y, self.width(), self.height())
+        else:
+            gradient = QLinearGradient(0, 0, self.width(), self.height())
+            gradient.setColorAt(0.0, QColor("#10243f"))
+            gradient.setColorAt(0.5, QColor("#1d3f66"))
+            gradient.setColorAt(1.0, QColor("#11253b"))
+            painter.fillRect(canvas.rect(), gradient)
+
+        overlay = QLinearGradient(0, 0, 0, self.height())
+        overlay.setColorAt(0.0, QColor(0, 0, 0, 110))
+        overlay.setColorAt(1.0, QColor(0, 0, 0, 185))
+        painter.fillRect(canvas.rect(), overlay)
+        painter.end()
+        return canvas
+
+    def paintEvent(self, event) -> None:  # type: ignore[override]
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.drawPixmap(self.rect(), self._background)
+
+        painter.setPen(QPen(QColor("#ffffff")))
+        painter.setFont(QFont("Segoe UI", 44, QFont.Bold))
+        painter.drawText(self.rect().adjusted(40, -30, -40, -20), Qt.AlignCenter, "Jose's CSV Check Merger")
+
+        painter.setPen(QPen(QColor("#dce6f4")))
+        painter.setFont(QFont("Segoe UI", 15))
+        painter.drawText(self.rect().adjusted(40, 170, -40, -20), Qt.AlignHCenter, "QuickBooks Vendor Name Updater")
+
+
 class CheckVendorUpdater(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
@@ -98,6 +146,8 @@ class CheckVendorUpdater(QMainWindow):
         container = QWidget(self)
         self.setCentralWidget(container)
         root_layout = QVBoxLayout(container)
+        root_layout.setContentsMargins(20, 18, 20, 18)
+        root_layout.setSpacing(12)
 
         title = QLabel("QuickBooks Check Vendor Updater")
         title.setObjectName("mainTitle")
@@ -110,6 +160,7 @@ class CheckVendorUpdater(QMainWindow):
         root_layout.addWidget(subtitle)
 
         file_group = QGroupBox("Step 1 — Select Files")
+        file_group.setObjectName("panel")
         file_layout = QGridLayout(file_group)
 
         self.quickbooks_path = QLineEdit()
@@ -133,6 +184,7 @@ class CheckVendorUpdater(QMainWindow):
         file_layout.addWidget(ref_btn, 1, 2)
 
         mapping_group = QGroupBox("Step 2 — Confirm Column Mapping")
+        mapping_group.setObjectName("panel")
         mapping_layout = QFormLayout(mapping_group)
 
         self.qb_check_combo = QComboBox()
@@ -151,6 +203,7 @@ class CheckVendorUpdater(QMainWindow):
         mapping_hint.setWordWrap(True)
 
         options_group = QGroupBox("Step 3 — Matching Options")
+        options_group.setObjectName("panel")
         options_layout = QHBoxLayout(options_group)
         self.normalize_checkbox = QCheckBox("Normalize check values (trim + remove .0)")
         self.normalize_checkbox.setChecked(True)
@@ -189,11 +242,13 @@ class CheckVendorUpdater(QMainWindow):
         self.status_label.setObjectName("statusLabel")
 
         self.summary_box = QTextEdit()
+        self.summary_box.setObjectName("summaryBox")
         self.summary_box.setReadOnly(True)
         self.summary_box.setFixedHeight(130)
         self.summary_box.setPlaceholderText("Summary will appear here after processing...")
 
         self.preview_table = QTableWidget()
+        self.preview_table.setObjectName("previewTable")
         self.preview_table.setColumnCount(0)
         self.preview_table.setRowCount(0)
         self.preview_table.setAlternatingRowColors(True)
@@ -214,12 +269,31 @@ class CheckVendorUpdater(QMainWindow):
     def _apply_styles(self) -> None:
         self.setStyleSheet(
             """
-            #mainTitle { font-size: 24px; font-weight: 700; }
-            #subTitle { color: #555; margin-bottom: 8px; }
-            #statusLabel { font-weight: 600; color: #1f4e79; }
-            QGroupBox { font-weight: 600; margin-top: 8px; }
-            QPushButton { min-height: 30px; padding: 4px 10px; }
-            QLineEdit { background: #fafafa; }
+            QMainWindow { background: #f4f7fb; }
+            #mainTitle { font-size: 28px; font-weight: 700; color: #0f2d4b; }
+            #subTitle { color: #4d6277; margin-bottom: 6px; font-size: 13px; }
+            #statusLabel { font-weight: 700; color: #1f4e79; background: #eaf2fd; border: 1px solid #c7dbf7; border-radius: 8px; padding: 8px 10px; }
+            QGroupBox#panel {
+                font-weight: 700;
+                border: 1px solid #d5e0ed;
+                border-radius: 12px;
+                margin-top: 10px;
+                background: #ffffff;
+                padding: 10px;
+            }
+            QGroupBox#panel::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 6px;
+                color: #173a5e;
+            }
+            QPushButton { min-height: 34px; padding: 6px 12px; border-radius: 8px; border: 1px solid #c4d5e8; background: #f7fbff; }
+            QPushButton:hover { background: #e8f2ff; }
+            QPushButton:disabled { color: #8ea0b4; background: #f2f4f7; }
+            QLineEdit, QComboBox, QTextEdit { background: #fbfdff; border: 1px solid #cdd9e6; border-radius: 8px; padding: 6px; }
+            #summaryBox { background: #f9fcff; }
+            #previewTable { gridline-color: #dde6f2; alternate-background-color: #f7faff; background: #ffffff; border: 1px solid #cdd9e6; border-radius: 8px; }
+            QHeaderView::section { background: #edf3fa; color: #29445f; padding: 6px; border: 0; border-right: 1px solid #d7e2ef; border-bottom: 1px solid #d7e2ef; }
             """
         )
 
@@ -374,6 +448,56 @@ class CheckVendorUpdater(QMainWindow):
         if self.updated_df is None:
             self._error("No updated data to save. Run the update first.")
             return
+        try:
+            self.reference_df = pd.read_csv(path, dtype=object)
+            self.reference_path.setText(path)
+            self._populate_combo(self.ref_check_combo, list(self.reference_df.columns), CHECK_COLUMN_CANDIDATES)
+            self._populate_combo(self.ref_vendor_combo, list(self.reference_df.columns), VENDOR_COLUMN_CANDIDATES)
+            self._update_summary("Loaded reference file.")
+            self._set_status("Reference file loaded")
+        except Exception as exc:
+            self._error(f"Could not read reference CSV: {exc}")
+
+    def _populate_combo(self, combo: QComboBox, columns: List[str], candidates: List[str]) -> None:
+        combo.clear()
+        combo.addItems(columns)
+        lower = {c.lower().strip(): c for c in columns}
+        for candidate in candidates:
+            for key, original in lower.items():
+                if candidate in key:
+                    combo.setCurrentText(original)
+                    return
+
+    def _required_mapping(self) -> Tuple[str, str, str, str]:
+        if self.quickbooks_df is None or self.reference_df is None:
+            raise ValueError("Please load both CSV files first.")
+
+        qb_check = self.qb_check_combo.currentText().strip()
+        qb_vendor = self.qb_vendor_combo.currentText().strip()
+        ref_check = self.ref_check_combo.currentText().strip()
+        ref_vendor = self.ref_vendor_combo.currentText().strip()
+
+        if not all([qb_check, qb_vendor, ref_check, ref_vendor]):
+            raise ValueError("Please map all required columns before processing.")
+
+        return qb_check, qb_vendor, ref_check, ref_vendor
+
+    def process_updates(self) -> None:
+        try:
+            self._set_status("Processing...")
+            qb_check, qb_vendor, ref_check, ref_vendor = self._required_mapping()
+
+            normalize_mode = self.normalize_checkbox.isChecked()
+            extract_from_text_mode = self.extract_checkbox.isChecked()
+            qb_df = self.quickbooks_df.copy() if self.quickbooks_df is not None else None
+            ref_df = self.reference_df.copy() if self.reference_df is not None else None
+            if qb_df is None or ref_df is None:
+                raise ValueError("Missing files.")
+
+            ref_df["_check_key"] = ref_df[ref_check].apply(
+                lambda v: normalize_check_number(v, normalize_mode, extract_from_text_mode)
+            )
+            ref_df["_vendor_value"] = ref_df[ref_vendor].fillna("").astype(str).str.strip()
 
         default_dir = str(Path(self.quickbooks_path.text()).parent) if self.quickbooks_path.text() else ""
         default_name = str(Path(default_dir) / "QuickBooks_Upload_Updated.csv")
@@ -450,8 +574,17 @@ class CheckVendorUpdater(QMainWindow):
 
 def main() -> None:
     app = QApplication(sys.argv)
+
+    splash = SplashScreen()
     window = CheckVendorUpdater()
-    window.show()
+
+    def show_main_window() -> None:
+        splash.close()
+        window.show()
+
+    splash.show()
+    QTimer.singleShot(2000, show_main_window)
+
     sys.exit(app.exec())
 
 

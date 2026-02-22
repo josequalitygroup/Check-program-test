@@ -1,6 +1,6 @@
 # QuickBooks Check Vendor Updater (Windows Desktop App)
 
-A simple Windows desktop app built with **Python + PySide6 + pandas** with a clean step-by-step interface.
+A simple Windows desktop app built with **Python + PySide6 + pandas** with a polished startup splash and clean step-by-step interface.
 
 It updates vendor/payee names in a QuickBooks upload CSV by matching check numbers from a second reference CSV.
 
@@ -10,6 +10,8 @@ It updates vendor/payee names in a QuickBooks upload CSV by matching check numbe
   - **QuickBooks Upload CSV** (target file to update)
   - **Check Reference CSV** (lookup file with check number + vendor name)
 - Friendly step-by-step GUI with status label, reset button, and clear action flow
+- Startup splash screen (2 seconds) with branded title: **Jose's CSV Check Merger**
+- Modernized visual styling with rounded panels, improved spacing, and polished controls
 - Flexible column mapping via dropdowns
 - Automatic best-effort detection of common column names
 - Matching by check number with normalization options:
