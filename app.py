@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import shutil
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -25,6 +26,7 @@ from PySide6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
+    QToolTip,
     QVBoxLayout,
     QWidget,
 )
@@ -156,10 +158,13 @@ class CheckVendorUpdater(QMainWindow):
         self.extract_checkbox.setChecked(True)
         self.unmatched_checkbox = QCheckBox("Export unmatched rows CSV")
         self.unmatched_checkbox.setChecked(True)
+        self.backup_checkbox = QCheckBox("Create backup of original QuickBooks CSV on save")
+        self.backup_checkbox.setChecked(True)
 
         options_layout.addWidget(self.normalize_checkbox)
         options_layout.addWidget(self.extract_checkbox)
         options_layout.addWidget(self.unmatched_checkbox)
+        options_layout.addWidget(self.backup_checkbox)
         options_layout.addStretch()
 
         actions_layout = QHBoxLayout()
@@ -171,8 +176,12 @@ class CheckVendorUpdater(QMainWindow):
         reset_btn = QPushButton("Reset")
         reset_btn.clicked.connect(self.reset_app)
 
+        help_btn = QPushButton("How matching works")
+        help_btn.clicked.connect(self.show_matching_help)
+
         actions_layout.addWidget(self.process_btn)
         actions_layout.addWidget(self.save_btn)
+        actions_layout.addWidget(help_btn)
         actions_layout.addWidget(reset_btn)
         actions_layout.addStretch()
 
@@ -328,6 +337,7 @@ class CheckVendorUpdater(QMainWindow):
             matched_rows = int(qb_df["_is_match"].sum())
             unmatched_rows = total_rows - matched_rows
             replaced_rows = int((qb_df["_is_match"] & (qb_df["_existing_vendor"] != qb_df[qb_vendor].astype(str))).sum())
+            empty_check_values = int((qb_df["_check_key"] == "").sum())
 
             self.unmatched_df = qb_df.loc[~qb_df["_is_match"], [qb_check, qb_vendor]].copy()
             self.updated_df = qb_df.drop(columns=["_check_key", "_existing_vendor", "_matched_vendor", "_is_match"])
@@ -340,6 +350,7 @@ class CheckVendorUpdater(QMainWindow):
                 f"Total check rows matched: {matched_rows}",
                 f"Total unmatched rows: {unmatched_rows}",
                 f"Total vendor names replaced: {replaced_rows}",
+                f"Rows skipped due to blank/invalid check number: {empty_check_values}",
             ]
             if self.duplicates:
                 msg_lines.append(
@@ -371,8 +382,20 @@ class CheckVendorUpdater(QMainWindow):
             return
 
         try:
+            if self.backup_checkbox.isChecked() and self.quickbooks_path.text():
+                source_path = Path(self.quickbooks_path.text())
+                if source_path.exists():
+                    backup_path = source_path.with_name(source_path.stem + "_Backup" + source_path.suffix)
+                    shutil.copy2(source_path, backup_path)
+
             self.updated_df.to_csv(path, index=False)
             info = [f"Saved updated CSV: {path}"]
+
+            if self.backup_checkbox.isChecked() and self.quickbooks_path.text():
+                source_path = Path(self.quickbooks_path.text())
+                backup_path = source_path.with_name(source_path.stem + "_Backup" + source_path.suffix)
+                if backup_path.exists():
+                    info.append(f"Saved backup of original QuickBooks CSV: {backup_path}")
 
             if self.unmatched_checkbox.isChecked() and self.unmatched_df is not None and not self.unmatched_df.empty:
                 unmatched_path = str(Path(path).with_name(Path(path).stem + "_Unmatched.csv"))
@@ -384,6 +407,20 @@ class CheckVendorUpdater(QMainWindow):
             self._set_status("Files saved")
         except Exception as exc:
             self._error(f"Failed to save CSV: {exc}")
+
+    def show_matching_help(self) -> None:
+        QToolTip.showText(
+            self.mapToGlobal(self.rect().center()),
+            (
+                "Matching uses the selected check-number columns from both files.\n"
+                "- Normalize: trims spaces and removes trailing '.0'.\n"
+                "- Extract: reads numbers from values like 'Check 101' or 'CHK-101'.\n"
+                "Turn these off for strict exact text matching."
+            ),
+            self,
+            self.rect(),
+            8000,
+        )
 
     def _render_preview(self, df: pd.DataFrame) -> None:
         preview = df.head(100)

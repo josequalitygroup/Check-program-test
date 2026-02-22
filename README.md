@@ -25,6 +25,7 @@ It updates vendor/payee names in a QuickBooks upload CSV by matching check numbe
 - Preview first 100 rows before saving
 - Save updated CSV as a new file (default `QuickBooks_Upload_Updated.csv`)
 - Optional unmatched report export (`*_Unmatched.csv`)
+- Optional backup of the original QuickBooks CSV on save (`*_Backup.csv`)
 - Summary metrics:
   - total rows
   - matched rows
@@ -54,7 +55,8 @@ python app.py
 4. Keep **Extract check number from text** enabled if your bank exports values like `Check 101`.
 5. Click **Update Vendor Names**.
 6. Review summary and preview.
-7. Click **Save Updated CSV**.
+7. (Optional) Keep **Create backup of original QuickBooks CSV** enabled.
+8. Click **Save Updated CSV**.
 
 ## Notes
 
