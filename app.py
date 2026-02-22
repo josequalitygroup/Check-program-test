@@ -173,6 +173,18 @@ class LoginDialog(QDialog):
 
         self.message_label.setText("Invalid username or password.")
 
+        self.quickbooks_path.clear()
+        self.reference_path.clear()
+        self.qb_check_combo.clear()
+        self.qb_vendor_combo.clear()
+        self.ref_check_combo.clear()
+        self.ref_vendor_combo.clear()
+        self.preview_table.clear()
+        self.preview_table.setRowCount(0)
+        self.preview_table.setColumnCount(0)
+        self.summary_box.clear()
+        self.save_btn.setEnabled(False)
+        self._set_status("Ready")
 
 
 class CheckVendorUpdater(QMainWindow):
