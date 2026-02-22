@@ -2,13 +2,13 @@
 
 A simple Windows desktop app built with **Python + PySide6 + pandas** with a polished startup splash and clean step-by-step interface.
 
-It updates vendor/payee names in a QuickBooks upload CSV by matching check numbers from a second reference CSV.
+It updates vendor/payee names in a QuickBooks upload file by matching check numbers from a second reference file (CSV or Excel .xlsx).
 
 ## Features
 
-- Upload two CSV files:
-  - **QuickBooks Upload CSV** (target file to update)
-  - **Check Reference CSV** (lookup file with check number + vendor name)
+- Upload two files (CSV or Excel `.xlsx`):
+  - **QuickBooks Upload file** (target file to update)
+  - **Check Reference file** (lookup file with check number + vendor name)
 - Friendly step-by-step GUI with status label, reset button, and clear action flow
 - Startup splash screen (2 seconds) with branded title: **Jose's CSV Check Merger**
 - Modernized visual styling with rounded panels, improved spacing, and polished controls
@@ -25,9 +25,9 @@ It updates vendor/payee names in a QuickBooks upload CSV by matching check numbe
   - warns user
   - uses first match by default
 - Preview first 100 rows before saving
-- Save updated CSV as a new file (default `QuickBooks_Upload_Updated.csv`)
-- Optional unmatched report export (`*_Unmatched.csv`)
-- Optional backup of the original QuickBooks CSV on save (`*_Backup.csv`)
+- Save updated file as CSV or Excel (default `QuickBooks_Upload_Updated.csv`)
+- Optional unmatched report export (`*_Unmatched.csv` / `*_Unmatched.xlsx`)
+- Optional backup of the original QuickBooks source file on save (`*_Backup.csv` or `*_Backup.xlsx`)
 - Summary metrics:
   - total rows
   - matched rows
@@ -51,14 +51,14 @@ python app.py
 
 ## Typical Workflow
 
-1. Select QuickBooks Upload CSV.
-2. Select Check Reference CSV.
+1. Select QuickBooks Upload file (CSV/Excel).
+2. Select Check Reference file (CSV/Excel).
 3. Confirm/adjust column mappings.
 4. Keep **Extract check number from text** enabled if your bank exports values like `Check 101`.
 5. Click **Update Vendor Names**.
 6. Review summary and preview.
-7. (Optional) Keep **Create backup of original QuickBooks CSV** enabled.
-8. Click **Save Updated CSV**.
+7. (Optional) Keep **Create backup of original QuickBooks file** enabled.
+8. Click **Save Updated CSV** (or choose Excel `.xlsx`).
 
 ## Notes
 

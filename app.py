@@ -165,21 +165,21 @@ class CheckVendorUpdater(QMainWindow):
 
         self.quickbooks_path = QLineEdit()
         self.quickbooks_path.setReadOnly(True)
-        self.quickbooks_path.setPlaceholderText("Choose the QuickBooks Upload CSV file...")
-        qb_btn = QPushButton("Browse QuickBooks CSV")
+        self.quickbooks_path.setPlaceholderText("Choose the QuickBooks Upload file (CSV/Excel)...")
+        qb_btn = QPushButton("Browse QuickBooks File")
         qb_btn.clicked.connect(self.load_quickbooks_csv)
 
         self.reference_path = QLineEdit()
         self.reference_path.setReadOnly(True)
-        self.reference_path.setPlaceholderText("Choose the Check Reference CSV file...")
-        ref_btn = QPushButton("Browse Reference CSV")
+        self.reference_path.setPlaceholderText("Choose the Check Reference file (CSV/Excel)...")
+        ref_btn = QPushButton("Browse Reference File")
         ref_btn.clicked.connect(self.load_reference_csv)
 
-        file_layout.addWidget(QLabel("QuickBooks Upload CSV (target):"), 0, 0)
+        file_layout.addWidget(QLabel("QuickBooks Upload file (target):"), 0, 0)
         file_layout.addWidget(self.quickbooks_path, 0, 1)
         file_layout.addWidget(qb_btn, 0, 2)
 
-        file_layout.addWidget(QLabel("Check Reference CSV (lookup):"), 1, 0)
+        file_layout.addWidget(QLabel("Check Reference file (lookup):"), 1, 0)
         file_layout.addWidget(self.reference_path, 1, 1)
         file_layout.addWidget(ref_btn, 1, 2)
 
@@ -209,9 +209,9 @@ class CheckVendorUpdater(QMainWindow):
         self.normalize_checkbox.setChecked(True)
         self.extract_checkbox = QCheckBox("Extract number from text (e.g., 'Check 101')")
         self.extract_checkbox.setChecked(True)
-        self.unmatched_checkbox = QCheckBox("Export unmatched rows CSV")
+        self.unmatched_checkbox = QCheckBox("Export unmatched rows report")
         self.unmatched_checkbox.setChecked(True)
-        self.backup_checkbox = QCheckBox("Create backup of original QuickBooks CSV on save")
+        self.backup_checkbox = QCheckBox("Create backup of original QuickBooks file on save")
         self.backup_checkbox.setChecked(True)
 
         options_layout.addWidget(self.normalize_checkbox)
@@ -380,33 +380,55 @@ class CheckVendorUpdater(QMainWindow):
         self.save_btn.setEnabled(False)
         self._set_status("Ready")
 
+
+
+    @staticmethod
+    def _read_table(path: str) -> pd.DataFrame:
+        suffix = Path(path).suffix.lower()
+        if suffix == ".csv":
+            return pd.read_csv(path, dtype=object)
+        if suffix == ".xlsx":
+            return pd.read_excel(path, dtype=object)
+        raise ValueError("Unsupported file type. Please select CSV or Excel (.xlsx).")
+
+    @staticmethod
+    def _write_table(df: pd.DataFrame, path: str) -> None:
+        suffix = Path(path).suffix.lower()
+        if suffix == ".csv":
+            df.to_csv(path, index=False)
+            return
+        if suffix == ".xlsx":
+            df.to_excel(path, index=False)
+            return
+        raise ValueError("Unsupported output format. Please save as .csv or .xlsx.")
+
     def load_quickbooks_csv(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, "Select QuickBooks Upload CSV", "", "CSV Files (*.csv)")
+        path, _ = QFileDialog.getOpenFileName(self, "Select QuickBooks Upload File", "", "Data Files (*.csv *.xlsx);;CSV Files (*.csv);;Excel Files (*.xlsx)")
         if not path:
             return
         try:
-            self.quickbooks_df = pd.read_csv(path, dtype=object)
+            self.quickbooks_df = self._read_table(path)
             self.quickbooks_path.setText(path)
             self._populate_combo(self.qb_check_combo, list(self.quickbooks_df.columns), CHECK_COLUMN_CANDIDATES)
             self._populate_combo(self.qb_vendor_combo, list(self.quickbooks_df.columns), VENDOR_COLUMN_CANDIDATES)
             self._update_summary("Loaded QuickBooks file.")
             self._set_status("QuickBooks file loaded")
         except Exception as exc:
-            self._error(f"Could not read QuickBooks CSV: {exc}")
+            self._error(f"Could not read QuickBooks file: {exc}")
 
     def load_reference_csv(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, "Select Check Reference CSV", "", "CSV Files (*.csv)")
+        path, _ = QFileDialog.getOpenFileName(self, "Select Check Reference File", "", "Data Files (*.csv *.xlsx);;CSV Files (*.csv);;Excel Files (*.xlsx)")
         if not path:
             return
         try:
-            self.reference_df = pd.read_csv(path, dtype=object)
+            self.reference_df = self._read_table(path)
             self.reference_path.setText(path)
             self._populate_combo(self.ref_check_combo, list(self.reference_df.columns), CHECK_COLUMN_CANDIDATES)
             self._populate_combo(self.ref_vendor_combo, list(self.reference_df.columns), VENDOR_COLUMN_CANDIDATES)
             self._update_summary("Loaded reference file.")
             self._set_status("Reference file loaded")
         except Exception as exc:
-            self._error(f"Could not read reference CSV: {exc}")
+            self._error(f"Could not read reference file: {exc}")
 
     def _populate_combo(self, combo: QComboBox, columns: List[str], candidates: List[str]) -> None:
         combo.clear()
@@ -516,7 +538,7 @@ class CheckVendorUpdater(QMainWindow):
             default_dir = ""
 
         default_name = str(Path(default_dir) / "QuickBooks_Upload_Updated.csv")
-        path, _ = QFileDialog.getSaveFileName(self, "Save Updated QuickBooks CSV", default_name, "CSV Files (*.csv)")
+        path, _ = QFileDialog.getSaveFileName(self, "Save Updated QuickBooks File", default_name, "CSV Files (*.csv);;Excel Files (*.xlsx)")
         if not path:
             return
 
@@ -528,22 +550,23 @@ class CheckVendorUpdater(QMainWindow):
                     backup_path = source_path.with_name(source_path.stem + "_Backup" + source_path.suffix)
                     shutil.copy2(source_path, backup_path)
 
-            self.updated_df.to_csv(path, index=False)
-            info = [f"Saved updated CSV: {path}"]
+            self._write_table(self.updated_df, path)
+            info = [f"Saved updated file: {path}"]
 
             if backup_path is not None and backup_path.exists():
-                info.append(f"Saved backup of original QuickBooks CSV: {backup_path}")
+                info.append(f"Saved backup of original QuickBooks file: {backup_path}")
 
             if self.unmatched_checkbox.isChecked() and self.unmatched_df is not None and not self.unmatched_df.empty:
-                unmatched_path = str(Path(path).with_name(Path(path).stem + "_Unmatched.csv"))
-                self.unmatched_df.to_csv(unmatched_path, index=False)
+                unmatched_ext = Path(path).suffix if Path(path).suffix.lower() in {".csv", ".xlsx"} else ".csv"
+                unmatched_path = str(Path(path).with_name(Path(path).stem + "_Unmatched" + unmatched_ext))
+                self._write_table(self.unmatched_df, unmatched_path)
                 info.append(f"Saved unmatched report: {unmatched_path}")
 
             QMessageBox.information(self, "Saved", "\n".join(info))
             self._update_summary("\n".join(info))
             self._set_status("Files saved")
         except Exception as exc:
-            self._error(f"Failed to save CSV: {exc}")
+            self._error(f"Failed to save file: {exc}")
 
     def show_matching_help(self) -> None:
         QToolTip.showText(
