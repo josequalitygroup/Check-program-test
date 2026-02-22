@@ -173,6 +173,223 @@ class LoginDialog(QDialog):
 
         self.message_label.setText("Invalid username or password.")
 
+        self._build_ui()
+        self._apply_styles()
+
+    def _build_ui(self) -> None:
+        container = QWidget(self)
+        self.setCentralWidget(container)
+        root_layout = QVBoxLayout(container)
+        root_layout.setContentsMargins(20, 18, 20, 18)
+        root_layout.setSpacing(12)
+
+        title = QLabel("QuickBooks Check Vendor Updater")
+        title.setObjectName("mainTitle")
+        subtitle = QLabel(
+            "Load both CSVs, confirm column mapping, then update vendor/payee names by check number."
+        )
+        subtitle.setWordWrap(True)
+        subtitle.setObjectName("subTitle")
+        root_layout.addWidget(title)
+        root_layout.addWidget(subtitle)
+
+        file_group = QGroupBox("Step 1 — Select Files")
+        file_group.setObjectName("panel")
+        file_layout = QGridLayout(file_group)
+
+        self.quickbooks_path = QLineEdit()
+        self.quickbooks_path.setReadOnly(True)
+        self.quickbooks_path.setPlaceholderText("Choose the QuickBooks Upload file (CSV/Excel)...")
+        qb_btn = QPushButton("Browse QuickBooks File")
+        qb_btn.clicked.connect(self.load_quickbooks_csv)
+
+        self.reference_path = QLineEdit()
+        self.reference_path.setReadOnly(True)
+        self.reference_path.setPlaceholderText("Choose the Check Reference file (CSV/Excel)...")
+        ref_btn = QPushButton("Browse Reference File")
+        ref_btn.clicked.connect(self.load_reference_csv)
+
+        file_layout.addWidget(QLabel("QuickBooks Upload file (target):"), 0, 0)
+        file_layout.addWidget(self.quickbooks_path, 0, 1)
+        file_layout.addWidget(qb_btn, 0, 2)
+
+        file_layout.addWidget(QLabel("Check Reference file (lookup):"), 1, 0)
+        file_layout.addWidget(self.reference_path, 1, 1)
+        file_layout.addWidget(ref_btn, 1, 2)
+
+        mapping_group = QGroupBox("Step 2 — Confirm Column Mapping")
+        mapping_group.setObjectName("panel")
+        mapping_layout = QFormLayout(mapping_group)
+
+        self.qb_check_combo = QComboBox()
+        self.qb_vendor_combo = QComboBox()
+        self.ref_check_combo = QComboBox()
+        self.ref_vendor_combo = QComboBox()
+
+        mapping_layout.addRow("QuickBooks Check Number column:", self.qb_check_combo)
+        mapping_layout.addRow("QuickBooks Vendor/Payee to update:", self.qb_vendor_combo)
+        mapping_layout.addRow("Reference Check Number column:", self.ref_check_combo)
+        mapping_layout.addRow("Reference Vendor Name column:", self.ref_vendor_combo)
+
+        mapping_hint = QLabel(
+            "Tip: Common check columns include Check Number, Num, Ref No, Document No, or values like 'Check 101'."
+        )
+        mapping_hint.setWordWrap(True)
+
+        options_group = QGroupBox("Step 3 — Matching Options")
+        options_group.setObjectName("panel")
+        options_layout = QHBoxLayout(options_group)
+        self.normalize_checkbox = QCheckBox("Normalize check values (trim + remove .0)")
+        self.normalize_checkbox.setChecked(True)
+        self.extract_checkbox = QCheckBox("Extract number from text (e.g., 'Check 101')")
+        self.extract_checkbox.setChecked(True)
+        self.unmatched_checkbox = QCheckBox("Export unmatched rows report")
+        self.unmatched_checkbox.setChecked(True)
+        self.backup_checkbox = QCheckBox("Create backup of original QuickBooks file on save")
+        self.backup_checkbox.setChecked(True)
+
+        options_layout.addWidget(self.normalize_checkbox)
+        options_layout.addWidget(self.extract_checkbox)
+        options_layout.addWidget(self.unmatched_checkbox)
+        options_layout.addWidget(self.backup_checkbox)
+        options_layout.addStretch()
+
+        actions_layout = QHBoxLayout()
+        self.process_btn = QPushButton("Step 4 — Update Vendor Names")
+        self.process_btn.clicked.connect(self.process_updates)
+        self.save_btn = QPushButton("Step 5 — Save Updated CSV")
+        self.save_btn.clicked.connect(self.save_updated_csv)
+        self.save_btn.setEnabled(False)
+        reset_btn = QPushButton("Reset")
+        reset_btn.clicked.connect(self.reset_app)
+
+        help_btn = QPushButton("How matching works")
+        help_btn.clicked.connect(self.show_matching_help)
+
+        actions_layout.addWidget(self.process_btn)
+        actions_layout.addWidget(self.save_btn)
+        actions_layout.addWidget(help_btn)
+        actions_layout.addWidget(reset_btn)
+        actions_layout.addStretch()
+
+        self.status_label = QLabel("Status: Ready")
+        self.status_label.setObjectName("statusLabel")
+
+        self.summary_box = QTextEdit()
+        self.summary_box.setObjectName("summaryBox")
+        self.summary_box.setReadOnly(True)
+        self.summary_box.setFixedHeight(130)
+        self.summary_box.setPlaceholderText("Summary will appear here after processing...")
+
+        self.preview_table = QTableWidget()
+        self.preview_table.setObjectName("previewTable")
+        self.preview_table.setColumnCount(0)
+        self.preview_table.setRowCount(0)
+        self.preview_table.setAlternatingRowColors(True)
+        self.preview_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.preview_table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+
+        root_layout.addWidget(file_group)
+        root_layout.addWidget(mapping_group)
+        root_layout.addWidget(mapping_hint)
+        root_layout.addWidget(options_group)
+        root_layout.addLayout(actions_layout)
+        root_layout.addWidget(self.status_label)
+        root_layout.addWidget(QLabel("Summary"))
+        root_layout.addWidget(self.summary_box)
+        root_layout.addWidget(QLabel("Preview (first 100 rows)"))
+        root_layout.addWidget(self.preview_table)
+
+    def _apply_styles(self) -> None:
+        self.setStyleSheet(
+            """
+            QMainWindow { background: #0f0f10; color: #f5f5f5; }
+            QLabel { color: #f5f5f5; }
+            #mainTitle { font-size: 30px; font-weight: 800; color: #f2c14e; letter-spacing: 0.5px; }
+            #subTitle { color: #f3e8ca; margin-bottom: 8px; font-size: 13px; }
+            #statusLabel {
+                font-weight: 700;
+                color: #fff8e6;
+                background: #1f1f20;
+                border: 1px solid #d4af37;
+                border-radius: 8px;
+                padding: 8px 10px;
+            }
+            QGroupBox#panel {
+                font-weight: 700;
+                border: 1px solid #d4af37;
+                border-radius: 12px;
+                margin-top: 10px;
+                background: #151516;
+                padding: 10px;
+                color: #f5f5f5;
+            }
+            QGroupBox#panel::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 6px;
+                color: #f2c14e;
+            }
+            QPushButton {
+                min-height: 34px;
+                padding: 6px 12px;
+                border-radius: 8px;
+                border: 1px solid #d4af37;
+                background: #1c1c1d;
+                color: #fff8e6;
+                font-weight: 600;
+            }
+            QPushButton:hover { background: #2a2a2c; }
+            QPushButton:pressed { background: #111111; }
+            QPushButton:disabled {
+                color: #8b8b8b;
+                border: 1px solid #545454;
+                background: #1a1a1a;
+            }
+            QLineEdit, QComboBox, QTextEdit {
+                background: #0f0f10;
+                color: #f5f5f5;
+                border: 1px solid #c29b2d;
+                border-radius: 8px;
+                padding: 6px;
+                selection-background-color: #d4af37;
+                selection-color: #111111;
+            }
+            QCheckBox { color: #f5f5f5; spacing: 8px; }
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
+                border: 1px solid #c29b2d;
+                border-radius: 4px;
+                background: #111111;
+            }
+            QCheckBox::indicator:checked { background: #d4af37; }
+            #summaryBox { background: #101011; color: #f5f5f5; }
+            #previewTable {
+                gridline-color: #3c3c3f;
+                alternate-background-color: #171718;
+                background: #101011;
+                color: #f5f5f5;
+                border: 1px solid #c29b2d;
+                border-radius: 8px;
+            }
+            QHeaderView::section {
+                background: #d4af37;
+                color: #151516;
+                padding: 6px;
+                border: 0;
+                border-right: 1px solid #8a6b1d;
+                border-bottom: 1px solid #8a6b1d;
+                font-weight: 700;
+            }
+            QToolTip {
+                background-color: #111111;
+                color: #f5f5f5;
+                border: 1px solid #d4af37;
+                padding: 6px;
+            }
+            """
+        )
 
 
 class CheckVendorUpdater(QMainWindow):
