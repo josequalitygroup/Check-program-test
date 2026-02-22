@@ -634,6 +634,7 @@ class CheckVendorUpdater(QMainWindow):
         )
         if not paths:
             return
+        raise ValueError(TRANSLATIONS[language]["unsupported_output"])
 
         frames: List[pd.DataFrame] = []
         errors: List[str] = []
