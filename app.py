@@ -269,31 +269,91 @@ class CheckVendorUpdater(QMainWindow):
     def _apply_styles(self) -> None:
         self.setStyleSheet(
             """
-            QMainWindow { background: #f4f7fb; }
-            #mainTitle { font-size: 28px; font-weight: 700; color: #0f2d4b; }
-            #subTitle { color: #4d6277; margin-bottom: 6px; font-size: 13px; }
-            #statusLabel { font-weight: 700; color: #1f4e79; background: #eaf2fd; border: 1px solid #c7dbf7; border-radius: 8px; padding: 8px 10px; }
+            QMainWindow { background: #0f0f10; color: #f5f5f5; }
+            QLabel { color: #f5f5f5; }
+            #mainTitle { font-size: 30px; font-weight: 800; color: #f2c14e; letter-spacing: 0.5px; }
+            #subTitle { color: #f3e8ca; margin-bottom: 8px; font-size: 13px; }
+            #statusLabel {
+                font-weight: 700;
+                color: #fff8e6;
+                background: #1f1f20;
+                border: 1px solid #d4af37;
+                border-radius: 8px;
+                padding: 8px 10px;
+            }
             QGroupBox#panel {
                 font-weight: 700;
-                border: 1px solid #d5e0ed;
+                border: 1px solid #d4af37;
                 border-radius: 12px;
                 margin-top: 10px;
-                background: #ffffff;
+                background: #151516;
                 padding: 10px;
+                color: #f5f5f5;
             }
             QGroupBox#panel::title {
                 subcontrol-origin: margin;
                 left: 10px;
                 padding: 0 6px;
-                color: #173a5e;
+                color: #f2c14e;
             }
-            QPushButton { min-height: 34px; padding: 6px 12px; border-radius: 8px; border: 1px solid #c4d5e8; background: #f7fbff; }
-            QPushButton:hover { background: #e8f2ff; }
-            QPushButton:disabled { color: #8ea0b4; background: #f2f4f7; }
-            QLineEdit, QComboBox, QTextEdit { background: #fbfdff; border: 1px solid #cdd9e6; border-radius: 8px; padding: 6px; }
-            #summaryBox { background: #f9fcff; }
-            #previewTable { gridline-color: #dde6f2; alternate-background-color: #f7faff; background: #ffffff; border: 1px solid #cdd9e6; border-radius: 8px; }
-            QHeaderView::section { background: #edf3fa; color: #29445f; padding: 6px; border: 0; border-right: 1px solid #d7e2ef; border-bottom: 1px solid #d7e2ef; }
+            QPushButton {
+                min-height: 34px;
+                padding: 6px 12px;
+                border-radius: 8px;
+                border: 1px solid #d4af37;
+                background: #1c1c1d;
+                color: #fff8e6;
+                font-weight: 600;
+            }
+            QPushButton:hover { background: #2a2a2c; }
+            QPushButton:pressed { background: #111111; }
+            QPushButton:disabled {
+                color: #8b8b8b;
+                border: 1px solid #545454;
+                background: #1a1a1a;
+            }
+            QLineEdit, QComboBox, QTextEdit {
+                background: #0f0f10;
+                color: #f5f5f5;
+                border: 1px solid #c29b2d;
+                border-radius: 8px;
+                padding: 6px;
+                selection-background-color: #d4af37;
+                selection-color: #111111;
+            }
+            QCheckBox { color: #f5f5f5; spacing: 8px; }
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
+                border: 1px solid #c29b2d;
+                border-radius: 4px;
+                background: #111111;
+            }
+            QCheckBox::indicator:checked { background: #d4af37; }
+            #summaryBox { background: #101011; color: #f5f5f5; }
+            #previewTable {
+                gridline-color: #3c3c3f;
+                alternate-background-color: #171718;
+                background: #101011;
+                color: #f5f5f5;
+                border: 1px solid #c29b2d;
+                border-radius: 8px;
+            }
+            QHeaderView::section {
+                background: #d4af37;
+                color: #151516;
+                padding: 6px;
+                border: 0;
+                border-right: 1px solid #8a6b1d;
+                border-bottom: 1px solid #8a6b1d;
+                font-weight: 700;
+            }
+            QToolTip {
+                background-color: #111111;
+                color: #f5f5f5;
+                border: 1px solid #d4af37;
+                padding: 6px;
+            }
             """
         )
 
